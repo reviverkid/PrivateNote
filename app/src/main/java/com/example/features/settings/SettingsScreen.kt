@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -130,7 +132,7 @@ fun SettingsScreen(
                             ListItem(
                                 headlineContent = { Text("Sign Out / Logout") },
                                 supportingContent = { Text("End current secure session") },
-                                leadingContent = { Icon(Icons.Default.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                                 modifier = Modifier
                                     .clickable(onClick = {
                                         authRepo.signOut()
@@ -142,7 +144,7 @@ fun SettingsScreen(
                             ListItem(
                                 headlineContent = { Text("Sign In") },
                                 supportingContent = { Text("Access your cloud account") },
-                                leadingContent = { Icon(Icons.Default.Login, contentDescription = null) },
+                                leadingContent = { Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null) },
                                 modifier = Modifier
                                     .clickable(onClick = onNavigateToLogin)
                                     .testTag("login_item")

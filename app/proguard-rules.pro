@@ -1,21 +1,30 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ProGuard & R8 configuration for production release
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve line numbers and source file attributes for crash analysis
+-keepattributes SourceFile,LineNumberTable
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Firebase components
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Room Database models and DAOs
+-keep class com.example.data.local.** { *; }
+-dontwarn androidx.room.**
+
+# Firestore data models
+-keep class com.example.firebase.firestore.RemoteConversation { *; }
+-keep class com.example.firebase.firestore.RemoteMessage { *; }
+-keep class com.example.firebase.firestore.UserProfile { *; }
+-keep class com.example.firebase.firestore.ContactRequest { *; }
+
+# Core and notifications
+-keep class com.example.core.notifications.** { *; }
+
+# OkHttp & Coroutines
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn kotlinx.coroutines.**
+
+# Preserve BuildConfig
+-keep class com.example.BuildConfig { *; }

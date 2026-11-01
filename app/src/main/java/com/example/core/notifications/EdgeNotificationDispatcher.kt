@@ -37,6 +37,9 @@ object EdgeNotificationDispatcher {
             .build()
     }
 
+    // Default Supabase project URL hosting the send-chat-notification function
+    const val DEFAULT_SUPABASE_URL = "https://wudzcukyibasnusruxcs.supabase.co"
+
     // Dynamic overrides if configured at runtime
     @Volatile
     var customSupabaseUrl: String? = null
@@ -46,13 +49,14 @@ object EdgeNotificationDispatcher {
 
     fun getSupabaseUrl(): String {
         customSupabaseUrl?.takeIf { it.isNotBlank() && it != "default" }?.let { return it.trimEnd('/') }
-        return try {
+        val buildConfigUrl = try {
             val field = BuildConfig::class.java.getField("SUPABASE_URL")
             val url = (field.get(null) as? String)?.trimEnd('/') ?: ""
-            if (url == "default") "" else url
+            if (url == "default" || url.isBlank()) null else url
         } catch (_: Exception) {
-            ""
+            null
         }
+        return (buildConfigUrl ?: DEFAULT_SUPABASE_URL).trimEnd('/')
     }
 
     fun getSupabaseAnonKey(): String {

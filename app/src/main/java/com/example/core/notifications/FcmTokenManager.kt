@@ -13,6 +13,7 @@ object FcmTokenManager {
     private const val KEY_LAST_SYNCED_TOKEN = "last_synced_token"
     private const val KEY_LAST_SYNCED_UID = "last_synced_uid"
 
+    @Suppress("DEPRECATION")
     suspend fun syncFcmToken(context: Context, firestoreRepo: FirestoreRepository = FirestoreRepository()) {
         val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         try {
