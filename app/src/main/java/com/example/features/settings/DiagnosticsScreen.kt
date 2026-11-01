@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -81,6 +82,46 @@ fun DiagnosticsScreen(
                         DiagnosticRow(icon = Icons.Default.Memory, label = "Local Room Cache Size", value = "1.4 MB")
                         HorizontalDivider()
                         DiagnosticRow(icon = Icons.Default.Sync, label = "Realtime Database Status", value = if (isFirebaseMode) "Connected (Spark Tier)" else "Simulated Demo")
+                    }
+                }
+            }
+
+            item {
+                Text("System Health & Notifications", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(8.dp))
+                val context = androidx.compose.ui.platform.LocalContext.current
+                var isTesting by remember { mutableStateOf(false) }
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Notification Diagnostics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Verify end-to-end delivery through Supabase and FCM.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                isTesting = true
+                                com.example.core.notifications.EdgeNotificationDispatcher.testNotification { success, message ->
+                                    isTesting = false
+                                    (context as? android.app.Activity)?.runOnUiThread {
+                                        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            enabled = !isTesting,
+                            modifier = Modifier.fillMaxWidth().testTag("test_push_button")
+                        ) {
+                            if (isTesting) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Dispatching...")
+                            } else {
+                                Icon(Icons.Default.NotificationsActive, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Test Push Notification (Supabase)")
+                            }
+                        }
                     }
                 }
             }

@@ -27,6 +27,8 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         Log.d(TAG, "FCM message received from: ${remoteMessage.from}")
+        Log.d(TAG, "FCM notification: ${remoteMessage.notification?.title} / ${remoteMessage.notification?.body}")
+        Log.d(TAG, "FCM data: ${remoteMessage.data}")
 
         // Respect conversation mute if a conversationId tag exists in data, otherwise display generic notification
         val conversationId = remoteMessage.data["conversationId"]

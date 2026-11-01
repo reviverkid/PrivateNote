@@ -561,7 +561,11 @@ async function sendFcmNotification(
   const errData = await res.json().catch(() => null);
   const isInvalid = isConfirmedInvalidTokenError(errData, res.status);
 
-  return { success: false, isInvalidToken: isInvalid };
+  return { 
+    success: false, 
+    isInvalidToken: isInvalid, 
+    error: errData?.error?.message || `HTTP ${res.status}` 
+  };
 }
 
 // Main HTTP Request Handler
@@ -587,19 +591,21 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { conversationId, messageId } = body;
-    if (
-      !conversationId ||
-      !messageId ||
-      typeof conversationId !== "string" ||
-      typeof messageId !== "string" ||
-      conversationId.trim().length === 0 ||
-      messageId.trim().length === 0
-    ) {
-      return new Response(JSON.stringify({ error: "Missing or invalid conversationId or messageId." }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+    const { conversationId, messageId, test } = body;
+    if (!test) {
+      if (
+        !conversationId ||
+        !messageId ||
+        typeof conversationId !== "string" ||
+        typeof messageId !== "string" ||
+        conversationId.trim().length === 0 ||
+        messageId.trim().length === 0
+      ) {
+        return new Response(JSON.stringify({ error: "Missing or invalid conversationId or messageId." }), {
+          status: 400,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // 2. Extract Authorization Bearer header
@@ -659,6 +665,65 @@ Deno.serve(async (req: Request) => {
 
     // 5. Mint Google OAuth2 token for Firestore & FCM HTTP v1
     const googleAccessToken = await getGoogleOAuth2Token(serviceAccount);
+
+    // 5.5 Support Test Mode
+    if (body.test === true) {
+      const userDoc = await getFirestoreDocument(
+        firebaseProjectId,
+        databaseId,
+        `users/${authenticatedUid}`,
+        googleAccessToken
+      );
+
+      if (!userDoc || !userDoc.fields) {
+        return new Response(JSON.stringify({ error: "Test failed: User profile not found in Firestore." }), {
+          status: 404,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
+
+      const tokens = new Set<string>();
+      if (userDoc.fields.fcmToken?.stringValue) tokens.add(userDoc.fields.fcmToken.stringValue);
+      const tokenArray = userDoc.fields.fcmTokens?.arrayValue?.values || [];
+      for (const t of tokenArray) {
+        if (t.stringValue) tokens.add(t.stringValue);
+      }
+
+      if (tokens.size === 0) {
+        return new Response(JSON.stringify({ error: "Test failed: No FCM tokens found for your account. Ensure you have granted notification permissions and the app has registered a token." }), {
+          status: 400,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        });
+      }
+
+      let sent = 0;
+      let failed = 0;
+      let lastFcmError = "";
+
+      for (const token of tokens) {
+        const result = await sendFcmNotification(firebaseProjectId, token, "test_diagnostics", googleAccessToken);
+        if (result.success) {
+          sent++;
+        } else {
+          failed++;
+          lastFcmError = (result as any).error || "FCM dispatch failed";
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: sent > 0,
+        status: "test_completed",
+        sentCount: sent,
+        failedCount: failed,
+        lastError: lastFcmError,
+        message: sent > 0 
+          ? `Successfully dispatched test notification to ${sent} device(s).` 
+          : `Failed to dispatch test notification. ${failed} attempts failed. Last error: ${lastFcmError || "Unknown FCM error"}`
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
 
     // 6. Verify conversation exists and sender is an authorized participant
     const conversationDoc = await getFirestoreDocument(
@@ -1018,10 +1083,10 @@ Deno.serve(async (req: Request) => {
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       }
     );
-  } catch (_err: any) {
-    // Sanitized client error response
+  } catch (err: any) {
+    // Sanitized client error response but helpful for debugging
     return new Response(
-      JSON.stringify({ error: "An error occurred while processing the notification." }),
+      JSON.stringify({ error: `Server error: ${err.message || "Unknown error"}` }),
       {
         status: 500,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

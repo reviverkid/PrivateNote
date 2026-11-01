@@ -131,7 +131,8 @@ object EdgeNotificationDispatcher {
                                 Log.w(TAG, "Edge function server error HTTP ${resp.code}, retrying (attempt $attempt)...")
                                 kotlinx.coroutines.delay(1200L * attempt)
                             } else {
-                                Log.w(TAG, "Edge function returned HTTP ${resp.code} - no retry.")
+                                val body = resp.body?.string() ?: ""
+                                Log.w(TAG, "Edge function returned HTTP ${resp.code} - no retry. Body: $body")
                                 success = true // Don't retry non-5xx errors
                             }
                         }
@@ -146,6 +147,68 @@ object EdgeNotificationDispatcher {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to invoke Supabase Edge Function: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Dispatches a test notification to the current user's registered devices.
+     * Used for diagnostics to verify end-to-end FCM delivery through Supabase.
+     */
+    fun testNotification(onResult: (Boolean, String) -> Unit) {
+        dispatcherScope.launch {
+            try {
+                val supabaseUrl = getSupabaseUrl()
+                if (supabaseUrl.isBlank()) {
+                    onResult(false, "Supabase URL not configured.")
+                    return@launch
+                }
+
+                val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
+                    onResult(false, "User not authenticated.")
+                    return@launch
+                }
+
+                val tokenResult = currentUser.getIdToken(false).await()
+                val idToken = tokenResult.token ?: run {
+                    onResult(false, "Failed to get ID token.")
+                    return@launch
+                }
+
+                val payload = JSONObject().apply {
+                    put("test", true)
+                }.toString()
+
+                val endpoint = "$supabaseUrl/functions/v1/send-chat-notification"
+
+                val requestBuilder = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $idToken")
+                    .addHeader("Content-Type", "application/json")
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+
+                val anonKey = getSupabaseAnonKey()
+                if (anonKey.isNotBlank()) {
+                    requestBuilder.addHeader("apikey", anonKey)
+                }
+
+                val response = httpClient.newCall(requestBuilder.build()).execute()
+                response.use { resp ->
+                    val respBody = resp.body?.string() ?: ""
+                    if (resp.isSuccessful) {
+                        onResult(true, "Test dispatched successfully! Check notifications.")
+                    } else {
+                        val errorMsg = try {
+                            JSONObject(respBody).getString("error")
+                        } catch (_: Exception) {
+                            "HTTP ${resp.code}: $respBody"
+                        }
+                        onResult(false, "Server error: $errorMsg")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Test notification failure: ${e.message}", e)
+                onResult(false, "Request failed: ${e.message}")
             }
         }
     }

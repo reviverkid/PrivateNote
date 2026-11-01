@@ -94,12 +94,13 @@ class FirestoreRepository {
         val currentUid = auth.currentUser?.uid ?: return
         if (token.isBlank()) return
         try {
-            firestore.collection("users").document(currentUid).update(
+            firestore.collection("users").document(currentUid).set(
                 mapOf(
                     "fcmToken" to token,
                     "fcmTokens" to com.google.firebase.firestore.FieldValue.arrayUnion(token),
                     "fcmTokenUpdatedAt" to System.currentTimeMillis()
-                )
+                ),
+                com.google.firebase.firestore.SetOptions.merge()
             ).await()
             Log.d("FirestoreRepository", "FCM token registered successfully for user $currentUid")
         } catch (e: Exception) {
