@@ -1,0 +1,6 @@
+{
+  "name": "Private Notes",
+  "description": "A privacy-oriented private workspace disguised as a modern Notes application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

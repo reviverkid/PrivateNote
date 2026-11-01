@@ -1,11 +1,10 @@
-<div align="center">
+# Private Notes Workspace
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A privacy-oriented private communication platform disguised as a modern Notes application built with Kotlin, Jetpack Compose, Material 3, Room, Android Keystore, Firebase Auth, Firestore, and Realtime Database.
 
-  <h1>Built with AI Studio</h2>
-
-  <p>The fastest path from prompt to production with Gemini.</p>
-
-  <a href="https://aistudio.google.com/apps">Start building</a>
-
-</div>
+## Features
+- **Public Notes App**: Fully functional local notes editor with folders, search, pinning, favorites, and auto-save backed by Room.
+- **Secret Workspace Access**: Configurable secret PIN authentication protected by Android Keystore.
+- **Private Collections & Entries**: Document-oriented private messaging/entries interface with E2EE architecture, disappearing messages/auto-expiry, and read status.
+- **Discreet Presence & Typing**: Real-time presence and typing status using Firebase Realtime Database.
+- **Material 3 Design**: Editorial dark and light themes with polished typography and responsive layouts.
