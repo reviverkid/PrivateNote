@@ -212,7 +212,12 @@ fun SettingsScreen(
                             trailingContent = {
                                 Switch(
                                     checked = notificationsEnabled,
-                                    onCheckedChange = { notificationsEnabled = it },
+                                    onCheckedChange = {
+                                        notificationsEnabled = it
+                                        scope.launch {
+                                            firestoreRepo.setGlobalNotificationsEnabled(it)
+                                        }
+                                    },
                                     modifier = Modifier.testTag("notifications_switch")
                                 )
                             }

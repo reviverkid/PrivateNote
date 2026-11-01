@@ -111,13 +111,33 @@ object EdgeNotificationDispatcher {
                     requestBuilder.addHeader("apikey", anonKey)
                 }
 
-                val response = httpClient.newCall(requestBuilder.build()).execute()
-                response.use { resp ->
-                    val respBody = resp.body?.string() ?: ""
-                    if (resp.isSuccessful) {
-                        Log.d(TAG, "Edge notification dispatched successfully: HTTP ${resp.code}")
-                    } else {
-                        Log.w(TAG, "Edge notification returned error: HTTP ${resp.code} - $respBody")
+                var attempt = 0
+                val maxAttempts = 3
+                var success = false
+
+                while (attempt < maxAttempts && !success) {
+                    attempt++
+                    try {
+                        val response = httpClient.newCall(requestBuilder.build()).execute()
+                        response.use { resp ->
+                            if (resp.isSuccessful) {
+                                success = true
+                                Log.d(TAG, "Edge notification dispatched successfully: HTTP ${resp.code}")
+                            } else if (resp.code in 500..599 && attempt < maxAttempts) {
+                                Log.w(TAG, "Edge function server error HTTP ${resp.code}, retrying (attempt $attempt)...")
+                                kotlinx.coroutines.delay(1200L * attempt)
+                            } else {
+                                Log.w(TAG, "Edge function returned HTTP ${resp.code} - no retry.")
+                                success = true // Don't retry non-5xx errors
+                            }
+                        }
+                    } catch (ioe: java.io.IOException) {
+                        if (attempt < maxAttempts) {
+                            Log.w(TAG, "Network error on notification dispatch, retrying (attempt $attempt)...", ioe)
+                            kotlinx.coroutines.delay(1200L * attempt)
+                        } else {
+                            Log.e(TAG, "Exhausted retries for edge notification dispatch: ${ioe.message}")
+                        }
                     }
                 }
             } catch (e: Exception) {

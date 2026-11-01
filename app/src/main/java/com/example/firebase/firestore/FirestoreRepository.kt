@@ -441,6 +441,31 @@ class FirestoreRepository {
         }
     }
 
+    suspend fun setConversationMuted(conversationId: String, isMuted: Boolean) {
+        val currentUid = auth.currentUser?.uid ?: return
+        try {
+            val userRef = firestore.collection("users").document(currentUid)
+            if (isMuted) {
+                userRef.update("mutedConversations", com.google.firebase.firestore.FieldValue.arrayUnion(conversationId)).await()
+            } else {
+                userRef.update("mutedConversations", com.google.firebase.firestore.FieldValue.arrayRemove(conversationId)).await()
+            }
+        } catch (e: Exception) {
+            Log.w("FirestoreRepository", "Set conversation muted error: ${e.message}", e)
+        }
+    }
+
+    suspend fun setGlobalNotificationsEnabled(enabled: Boolean) {
+        val currentUid = auth.currentUser?.uid ?: return
+        try {
+            firestore.collection("users").document(currentUid).update(
+                mapOf("notificationsEnabled" to enabled)
+            ).await()
+        } catch (e: Exception) {
+            Log.w("FirestoreRepository", "Set global notifications error: ${e.message}", e)
+        }
+    }
+
     suspend fun deleteMessage(conversationId: String, messageId: String, forEveryone: Boolean) {
         val currentUid = auth.currentUser?.uid ?: return
         try {

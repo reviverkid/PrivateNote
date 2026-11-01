@@ -481,6 +481,9 @@ fun CollectionEntryScreen(
                                     showMenu = false
                                     isMuted = !isMuted
                                     NotificationHelper.setConversationMuted(context, collectionId, isMuted)
+                                    scope.launch {
+                                        firestoreRepo.setConversationMuted(collectionId, isMuted)
+                                    }
                                     val status = if (isMuted) "Notifications muted" else "Notifications unmuted"
                                     Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
                                 },
